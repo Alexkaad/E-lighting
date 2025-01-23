@@ -3,3 +3,14 @@ controllers:
         path: ../src/Controller/
         namespace: App\Controller
     type: attribute
+
+login:
+    path: /api/login
+
+app_jwt_validateJwt:
+    path: /api/validate-jwt
+    controller: App\Controller\JwtController::validateJwt
+app_product_getallproducts:
+    path: /api/product/getAll
+    controller: App\Controller\ProductController::getAllProducts
+    methods: ['GET', 'OPTIONS']
