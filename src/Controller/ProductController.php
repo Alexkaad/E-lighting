@@ -5,26 +5,22 @@ namespace App\Controller;
 use App\Entity\Product;
 use App\Repository\ProductRepository;
 use App\Repository\UserRepository;
-use http\Client\Curl\User;
-use http\Env\Response;
+
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
-use Symfony\Component\HttpKernel\Attribute\MapRequestPayload;
 use Symfony\Component\Routing\Attribute\Route;
 
 #[Route('/api/product')]
 class ProductController extends AbstractController
 {
-   private ProductRepository $repository;
-   private UserRepository $userRepository;
+    private ProductRepository $repository;
+    private UserRepository $userRepository;
 
 
     public function __construct(
         ProductRepository $repository,
-
-
 
 
     )
@@ -34,7 +30,7 @@ class ProductController extends AbstractController
     }
 
     #[Route('/add', methods: ['POST'])]
-    public function addProduct( Request $request): JsonResponse
+    public function addProduct(Request $request): JsonResponse
     {
         // Lire les données envoyées depuis Angular
         $data = json_decode($request->getContent(), true);
@@ -70,17 +66,73 @@ class ProductController extends AbstractController
         ], 201); // Code 201 : Created
     }
 
-    #[Route('/getAll', methods: ['GET','OPTIONS'])]
-
-    public function getAllProducts(LoggerInterface $logger,Request $request): \Symfony\Component\HttpFoundation\Response
+    #[Route('/getAll', methods: ['GET', 'OPTIONS'])]
+    public function getAllProducts(LoggerInterface $logger, Request $request): \Symfony\Component\HttpFoundation\Response
     {
 
         $products = $this->repository->getAllProductsWithImages();
 
-        $logger->info('Méthodes reçue  ',['method' => $request->getMethod()]);;
+        $logger->info('Méthodes reçue  ', ['method' => $request->getMethod()]);;
 
 
         return new JsonResponse($products, JsonResponse::HTTP_OK);
+    }
+
+    #[Route('/get/{id}', methods: ['GET', 'OPTIONS'])]
+    public function getOneProduct(int $id): JsonResponse
+    {
+        try {
+            // Appel de la méthode dans le repository
+            $product = $this->repository->getProductWithHispictures($id);
+
+            if (!$product) {
+                // Retourner une réponse JSON avec un code 404 si le produit n'est pas trouvé
+                return $this->json([
+                    'message' => 'Produit introuvable',
+                ], \Symfony\Component\HttpFoundation\Response::HTTP_NOT_FOUND);
+            }
+
+            // Retourner la réponse JSON avec les données du produit
+            return $this->json([
+                'success' => true,
+                'product' => $product,
+            ], \Symfony\Component\HttpFoundation\Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            // Gestion des erreurs
+            return $this->json([
+                'success' => false,
+                'message' => 'Une erreur est survenue : ' . $e->getMessage(),
+            ], \Symfony\Component\HttpFoundation\Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    #[Route ('/category/{categoryId}', methods: ['GET'])]
+    public function getProductsByCategory(int $categoryId, Request $request): JsonResponse
+    {
+        // Récupérer les paramètres de pagination depuis la requête
+        $offset = $request->query->get('offset', 0); // Valeur par défaut = 0
+        $limit = $request->query->get('limit', 10);  // Valeur par défaut = 10
+
+        // Appeler le service pour récupérer les produits avec leurs images
+        $products = $this->repository->getProductByCategory($categoryId, (int)$offset, (int)$limit);
+
+        // Retourner les résultats au format JSON
+        return $this->json($products, 200);
+    }
+
+    #[Route('/brand/{brandId}', methods: ['GET'])]
+    public function getProductByBrand(int $brandId, Request $request)
+    {
+        // Récupérer les paramètres de pagination depuis la requête
+        $offset = $request->query->get('offset', 0); // Valeur par défaut = 0
+        $limit = $request->query->get('limit', 10);  // Valeur par défaut = 10
+
+        // Appeler le service pour récupérer les produits avec leurs images
+        $products = $this->repository->getProductByBrand($brandId, (int)$offset, (int)$limit);
+
+        // Retourner les résultats au format JSON
+        return $this->json($products, 200);
     }
 }
 

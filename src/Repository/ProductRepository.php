@@ -217,76 +217,83 @@ VALUES (:name,:price,:description,:couleur,:reference,:creator_id,:sku,:brand_id
         $query->execute();
     }
 
-    public function getProductByCategory(int $categoryId, int $offset, int $limit)
+    public function getProductByCategory(int $categoryId, int $offset, int $limit):array
     {
         $connexion = Database::connect();
-        $query = $connexion->prepare("SELECT * FROM products WHERE category_id = :categoryId ORDER BY id DESC LIMIT :offset,:limit");
-        $query->bindValue(':categoryId', $categoryId);
-        $query->bindValue(':offset', $offset);
-        $query->bindValue(':limit', $limit);
+        $query = $connexion->prepare("SELECT 
+            i.id AS image_id,
+            i.url AS url,
+            p.id AS product_id,
+            p.name AS product_name,
+            p.description AS product_description,
+            p.price AS product_price,
+            p.couleur AS product_couleur
+        FROM 
+             images i
+        LEFT JOIN 
+           products p
+        ON 
+          i.product_id = p.id
+        WHERE 
+            p.category_id = :category_id
+        ORDER BY 
+            p.id DESC 
+        LIMIT " . intval($offset) . ", " . intval($limit) . "
+
+   ");
+        $query->bindValue(':category_id', $categoryId);
+
         $query->execute();
-        $list = [];
+        $rows = $query->fetchAll();
+        $products = [];
 
-        foreach ($query->fetchAll() as $line) {
-            $category = new Category();
-            $category->setId($line['id']);
-            $category->setName($line['name']);
-            $category->setCreatedAt(new \DateTimeImmutable($line['createAt']));
-            $category->setUpdatedAt(new \DateTimeImmutable($line['updateAt']));
+        foreach ($rows as $row) {
 
-            $product = new Product();
-            $product->setId($line['id']);
-            $product->setName($line['name']);
-            $product->setPrice($line['price']);
-            $product->setDescription($line['description']);
-            $product->setCouleur($line['couleur']);
-            $product->setReference($line['reference']);
-            $product->setCreatorId($line['creator_id']);
-            $product->setSku($line['sku']);
-            $product->setBrandId($line['brand_id']);
-            $product->setCategoryId($line['category_id']);
-            $product->setQuantityStock($line['quantity_stock']);
-
-            $list[] = $product;
+           $products[] = $row['product_id'];
 
         }
-        return $list;
+        return $products;
     }
+
+
 
     public function getProductByBrand(int $brandId, int $offset, int $limit)
     {
 
         $connexion = Database::connect();
-        $query = $connexion->prepare("SELECT * FROM products WHERE brand_id = :brandId ORDER BY id DESC LIMIT :offset,:limit");
-        $query->bindValue(':brandId', $brandId);
-        $query->bindValue(':offset', $offset);
-        $query->bindValue(':limit', $limit);
+        $query = $connexion->prepare("SELECT 
+            
+            i.id AS image_id,
+            i.url AS image_url,
+            p.id AS product_id,
+            p.name AS product_name,
+            p.description AS product_description,
+            p.price AS product_price,
+            p.couleur AS product_couleur
+        FROM 
+            images i
+        LEFT JOIN 
+            products p
+        ON 
+           i.product_id = p.id 
+        WHERE 
+            p.brand_id = :brand_id
+        ORDER BY 
+            p.id ASC
+        LIMIT $offset, $limit");
+        $query->bindValue(':brand_id', $brandId);
         $query->execute();
-        $list = [];
-        foreach ($query->fetchAll() as $line) {
-            $brand = new Brand();
-            $brand->setId($line['id']);
-            $brand->setName($line['name']);
-            $brand->setOrigin($line['origin']);
-            $brand->setCreatedAt(new \DateTimeImmutable($line['createAt']));
-            $brand->setUpdatedAt(new \DateTimeImmutable($line['updateAt']));
+        $rows = $query->fetchAll();
+        $products = [];
 
-            $product = new Product();
-            $product->setId($line['id']);
-            $product->setName($line['name']);
-            $product->setPrice($line['price']);
-            $product->setDescription($line['description']);
-            $product->setCouleur($line['couleur']);
-            $product->setReference($line['reference']);
-            $product->setCreatorId($line['creator_id']);
-            $product->setSku($line['sku']);
-            $product->setBrandId($line['brand_id']);
-            $product->setCategoryId($line['category_id']);
-            $product->setQuantityStock($line['quantity_stock']);
+        foreach ($rows as $row) {
 
-            $list[] = $product;
+            $products[] = $row['product_id'];
+
         }
-        return $list;
+        return $products;
+
+
     }
 
     public function getProductByCreator(int $creatorId, int $offset, int $limit)
@@ -327,6 +334,53 @@ VALUES (:name,:price,:description,:couleur,:reference,:creator_id,:sku,:brand_id
         }
         return $list;
     }
+
+    public function getProductWithHispictures(int $productId): ?array
+    {
+        $connexion = Database::connect();
+        $query = $connexion->prepare("SELECT 
+            p.id AS product_id,
+            p.name AS product_name,
+            p.description AS product_description,
+            p.price AS product_price,
+            p.couleur AS product_couleur,
+            i.id AS image_id,
+            i.url AS image_url
+        FROM 
+            products p
+        LEFT JOIN 
+            images i
+        ON 
+            p.id = i.product_id
+        WHERE 
+            p.id = :product_id
+        ORDER BY 
+            p.id ASC;
+");
+        $query->bindValue(':product_id', $productId);
+        $query->execute();
+
+        $rows = $query->fetchAll();
+        $product = null;
+        foreach ($rows as $row)
+        {
+            if($product === null)
+            {
+                $product = [
+
+                    'id' => $row['product_id'],
+                    'name' => $row['product_name'],
+                    'description' => $row['product_description'],
+                    'price' => $row['product_price'],
+                    'couleur' => $row['product_couleur'],
+                    'images'=>[],
+                ];
+            }
+
+        }
+        return  $product;
+    }
+
 
     public function getAllProductsWithImages(): array
     {

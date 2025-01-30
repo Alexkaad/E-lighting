@@ -49,6 +49,8 @@ security:
        - { path: ^/api/login, roles: PUBLIC_ACCESS }
        - { path: ^/api/image_entity, methods: 'POST', roles: PUBLIC_ACCESS, }
        - { path: ^/api/product/add, methods: 'POST', roles: PUBLIC_ACCESS}
+       - {path : ^/api/product/category/, methods: 'GET'}
+       - {path : ^/api/product/brand/, methods: 'GET'}
        - { path: ^/api/product/getAll, methods: 'GET', roles: PUBLIC_ACCESS}
        - { path: ^/api/images, methods: 'POST',roles: PUBLIC_ACCESS}
        - { path: ^/api/brand/add, methods: 'POST', roles: PUBLIC_ACCESS}
